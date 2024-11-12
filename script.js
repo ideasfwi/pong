@@ -36,6 +36,46 @@ let ball = {
 let playerScore = 0;
 let computerScore = 0;
 
+// Difficulty settings
+let difficulty = 'medium'; // Default difficulty
+
+// Set ball speed based on difficulty
+function setDifficulty(level) {
+  switch (level) {
+    case 'easy':
+      ball.dx = 7;
+      ball.dy = 7;
+      break;
+    case 'medium':
+      ball.dx = 10;
+      ball.dy = 10;
+      break;
+    case 'hard':
+      ball.dx = 13;
+      ball.dy = 13;
+      break;
+  }
+}
+
+// Event listeners for difficulty buttons
+document.getElementById('easy').addEventListener('click', () => {
+  difficulty = 'easy';
+  setDifficulty(difficulty);
+  resetGame();
+});
+
+document.getElementById('medium').addEventListener('click', () => {
+  difficulty = 'medium';
+  setDifficulty(difficulty);
+  resetGame();
+});
+
+document.getElementById('hard').addEventListener('click', () => {
+  difficulty = 'hard';
+  setDifficulty(difficulty);
+  resetGame();
+});
+
 // Function to draw paddles
 function drawPaddle(paddle) {
   ctx.fillStyle = '#fff';
@@ -117,23 +157,34 @@ function update() {
   requestAnimationFrame(update);
 }
 
-// Function to reset the ball to the center
+// Function to reset the ball and game state
 function resetBall() {
   ball.x = canvas.width / 2;
   ball.y = canvas.height / 2;
-  ball.dx = (Math.random() > 0.5 ? 1 : -1) * 5;
-  ball.dy = (Math.random() > 0.5 ? 1 : -1) * 5;
+  ball.dx = (Math.random() > 0.5 ? 1 : -1) * Math.abs(ball.dx);
+  ball.dy = (Math.random() > 0.5 ? 1 : -1) * Math.abs(ball.dy);
 }
 
-// Start the game
+function resetGame() {
+  playerScore = 0;
+  computerScore = 0;
+  resetBall();
+}
+
+// Start the game with default difficulty
+setDifficulty(difficulty);
 update();
 
-// Event listener for player paddle movement
+// Event listener for player paddle movement (mouse)
 document.addEventListener('mousemove', (event) => {
   playerPaddle.y = event.clientY - playerPaddle.height / 2;
 });
 
-// Draw the game title (outside of the update function)
-ctx.font = '50px Arial';
-ctx.fillStyle = '#fff';
-ctx.fillText("APPA PONG", canvas.width / 2 - 100, 100);
+// Event listener for player paddle movement (touchscreen)
+canvas.addEventListener('touchmove', (event) => {
+  event.preventDefault();
+  const touch = event.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const touchY = touch.clientY - rect.top;
+  playerPaddle.y = touchY - playerPaddle.height / 2;
+});
