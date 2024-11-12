@@ -1,115 +1,139 @@
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+// Get canvas and context
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
-const paddleHeight = 80;
-const paddleWidth = 10;
-const ballRadius = 10;
+// Canvas size (double the original)
+canvas.width = 800;
+canvas.height = 600;
 
-let playerX = 10;
-let playerY = 150 - paddleHeight / 2;
-let opponentX = canvas.width - paddleWidth - 10;
-let opponentY = 150 - paddleHeight / 2;
-let ballX = canvas.width / 2;
-let ballY = canvas.height / 2;
-let ballDX = 5;
-let ballDY = 5;
+// Paddle and ball properties
+let playerPaddle = {
+  x: 10,
+  y: canvas.height / 2 - 50,
+  width: 20,
+  height: 100,
+  speed: 5
+};
 
+let computerPaddle = {
+  x: canvas.width - 30,
+  y: canvas.height / 2 - 50,
+  width: 20,
+  height: 100,
+  speed: 5
+};
+
+let ball = {
+  x: canvas.width / 2,
+  y: canvas.height / 2,
+  radius: 10,
+  speed: 5,
+  dx: 5,
+  dy: 5
+};
+
+// Score variables
 let playerScore = 0;
-let opponentScore = 0;
+let computerScore = 0;
 
-function drawPaddle(x, y) {
-  ctx.fillStyle = "#eee";
-  ctx.fillRect(x, y, paddleWidth, paddleHeight);
+// Function to draw paddles
+function drawPaddle(paddle) {
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
 }
 
+// Function to draw the ball
 function drawBall() {
-  ctx.fillStyle = "#eee";
+  ctx.fillStyle = '#fff';
   ctx.beginPath();
-  ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+  ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
   ctx.fill();
 }
 
+// Function to draw the score
 function drawScore() {
-  ctx.font = "20px Arial";
-  ctx.fillStyle = "#eee";
-  ctx.fillText(playerScore, canvas.width / 4, 30);
-  ctx.fillText(opponentScore, 3 * canvas.width / 4, 30);
+  ctx.font = '30px Arial';
+  ctx.fillStyle = '#fff';
+  ctx.fillText(playerScore, canvas.width / 4, 50);
+  ctx.fillText(computerScore, 3 * canvas.width / 4, 50);
 }
 
-function resetBall() {
-  ballX = canvas.width / 2;
-  ballY = canvas.height / 2;
-  ballDX = 5 * (Math.random() > 0.5 ? 1 : -1);
-  ballDY = 5 * (Math.random() > 0.5 ? 1 : -1);
-}
+// Function to update the game state
+function update() {
+  // Clear the canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-function checkCollision() {
-  // Player paddle collision
-  if (ballX - ballRadius < playerX + paddleWidth &&
-      ballY > playerY && ballY < playerY + paddleHeight) {
-    ballDX = -ballDX;
+  // Update ball position
+  ball.x += ball.dx;
+  ball.y += ball.dy;
+
+  // Ball collision with top and bottom walls
+  if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+    ball.dy *= -1;
   }
 
-  // Opponent paddle collision
-  if (ballX + ballRadius > opponentX &&
-      ballY > opponentY && ballY < opponentY + paddleHeight) {
-    ballDX = -ballDX;
+  // Ball collision with paddles
+  if (ball.x + ball.radius > computerPaddle.x &&
+      ball.x + ball.radius < computerPaddle.x + computerPaddle.width &&
+      ball.y + ball.radius > computerPaddle.y &&
+      ball.y - ball.radius < computerPaddle.y + computerPaddle.height) {
+    ball.dx *= -1;
   }
 
-  // Top and bottom wall collision
-  if (ballY - ballRadius < 0 || ballY + ballRadius > canvas.height) {
-    ballDY = -ballDY;
+  if (ball.x - ball.radius < playerPaddle.x + playerPaddle.width &&
+      ball.x - ball.radius > playerPaddle.x &&
+      ball.y + ball.radius > playerPaddle.y &&
+      ball.y - ball.radius < playerPaddle.y + playerPaddle.height) {
+    ball.dx *= -1;
   }
 
-  // Score check
-  if (ballX - ballRadius < 0) {
-    opponentScore++;
+  // Ball out of bounds (scoring)
+  if (ball.x - ball.radius < 0) {
+    computerScore++;
     resetBall();
-  }
-
-  if (ballX + ballRadius > canvas.width) {
+  } else if (ball.x + ball.radius > canvas.width) {
     playerScore++;
     resetBall();
   }
-}
 
-function update() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Computer paddle movement with randomness
+  let randomFactor = Math.random() * 10 - 5; // Range from -5 to 5
+  computerPaddle.y += (ball.y - computerPaddle.y) / 10 + randomFactor;
 
-  ballX += ballDX;
-  ballY += ballDY;
-
-  // Simple AI for opponent paddle
-  if (ballY < opponentY + paddleHeight / 2 && opponentY > 0) {
-    opponentY -= 5;
-  } else if (ballY > opponentY + paddleHeight / 2 && opponentY + paddleHeight < canvas.height) {
-    opponentY += 5;
+  // Keep computer paddle within bounds
+  if (computerPaddle.y < 0) {
+    computerPaddle.y = 0;
+  } else if (computerPaddle.y + computerPaddle.height > canvas.height) {
+    computerPaddle.y = canvas.height - computerPaddle.height;
   }
 
-  checkCollision();
-  drawPaddle(playerX, playerY);
-  drawPaddle(opponentX, opponentY);
+  // Draw everything
+  drawPaddle(playerPaddle);
+  drawPaddle(computerPaddle);
   drawBall();
   drawScore();
 
-  // Update player paddle position based on touch
-  playerY = touchY - paddleHeight / 2; // Adjust for paddle height
-
+  // Game loop
   requestAnimationFrame(update);
 }
 
-// Add event listeners for touch events
-canvas.addEventListener("touchstart", handleTouchStart);
-canvas.addEventListener("touchmove", handleTouchMove);
-
-let touchY = 0; // Store the touch Y position
-
-function handleTouchStart(event) {
-  touchY = event.touches[0].clientY;
+// Function to reset the ball to the center
+function resetBall() {
+  ball.x = canvas.width / 2;
+  ball.y = canvas.height / 2;
+  ball.dx = (Math.random() > 0.5 ? 1 : -1) * 5;
+  ball.dy = (Math.random() > 0.5 ? 1 : -1) * 5;
 }
 
-function handleTouchMove(event) {
-  touchY = event.touches[0].clientY;
-}
-
+// Start the game
 update();
+
+// Event listener for player paddle movement
+document.addEventListener('mousemove', (event) => {
+  playerPaddle.y = event.clientY - playerPaddle.height / 2;
+});
+
+// Draw the game title (outside of the update function)
+ctx.font = '50px Arial';
+ctx.fillStyle = '#fff';
+ctx.fillText("APPA PONG", canvas.width / 2 - 100, 100);
